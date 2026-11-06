@@ -1,0 +1,42 @@
+# Verify the "complete" nvoos-dictate.exe feature union.
+# Scans the PE binary for feature markers and reports counts.
+param(
+    [string]$Exe = "src-tauri\target\debug\nvoos-dictate.exe"
+)
+
+$bytes = [System.IO.File]::ReadAllBytes((Resolve-Path $Exe))
+$text  = [System.Text.Encoding]::ASCII.GetString($bytes)
+
+$markers = @(
+    @{ name = "parakeet";        re = "parakeet" },
+    @{ name = "fastconformer";   re = "fastconformer" },
+    @{ name = "whisper";         re = "whisper" },
+    @{ name = "sherpa-onnx";     re = "sherpa-onnx" },
+    @{ name = "silero-vad";      re = "silero-vad" },
+    @{ name = "vision (YOLO)";   re = "yolo" },
+    @{ name = "vision (ort)";    re = "ort" },
+    @{ name = "camera (nokhwa)"; re = "nokhwa" },
+    @{ name = "agent";           re = "nvoos-agent" },
+    # The "nvoos-agent" thread-name literal is DCE'd by release optimizations;
+    # the controller's own spawn-error string survives in both profiles.
+    @{ name = "agent (release-proof)"; re = "could not spawn agent worker" },
+    @{ name = "mcp";             re = "mcp" },
+    @{ name = "snippet (OCR)";   re = "snippet" },
+    @{ name = "document (pdfium)"; re = "pdfium library not found" },
+    @{ name = "memory (vec0)";       re = "chunk_vectors" },
+    @{ name = "memory (tokenizers)"; re = "tokenizer truncation" },
+    @{ name = "memory (granite)";    re = "granite-97m-r2-int8" },
+    @{ name = "Assistant SPA";   re = "Assistant" },
+    # The plain "moonshine" token also matches sherpa-onnx's own model-zoo
+    # strings (it supports the Moonshine model family), so assert on the
+    # app-specific engine error text instead.
+    @{ name = "moonshine engine (should be ABSENT)"; re = "the moonshine engine is a documented spike" }
+)
+
+Write-Output ("Exe size: {0:N1} MB" -f ($bytes.Length / 1MB))
+Write-Output ("Exe path: {0}" -f (Resolve-Path $Exe))
+Write-Output "--- marker scan ---"
+foreach ($m in $markers) {
+    $count = ([regex]::Matches($text, $m.re, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)).Count
+    Write-Output ("{0,-36} {1,5}  {2}" -f $m.name, $count, $(if ($count -gt 0) { "PRESENT" } else { "absent" }))
+}
