@@ -1,0 +1,94 @@
+//! NV oOS Stage-2 provider: delegates polishing to a configured WordPress
+//! site's assistant via the plugin REST chat endpoint with the assistant
+//! credential stored in the OS keychain.
+//!
+//! Auth contract (mirrors the repo's content-graph SPA contract):
+//! `Authorization: Bearer cred_XXXXX.SECRET`; a failing credential is a
+//! definitive 401 — the client never falls back to unauthenticated requests.
+
+use async_trait::async_trait;
+
+use crate::cleanup::providers::{CleanupProvider, PolishMeta};
+use crate::config::{AppCategory, NvoosConfig};
+use crate::error::AppResult;
+use crate::nvoos::NvoosClient;
+use crate::state::{SecretStore, KEY_NVOOS_CREDENTIAL};
+
+pub struct NvoosProvider {
+    client: NvoosClient,
+    cleanup_prompt: String,
+    assistant_id: Option<String>,
+    polish_provider: Option<String>,
+    polish_model: Option<String>,
+}
+
+impl NvoosProvider {
+    pub fn new(config: &NvoosConfig, secrets: &dyn SecretStore) -> AppResult<Self> {
+        let credential = secrets.get(KEY_NVOOS_CREDENTIAL)?.ok_or_else(|| {
+            crate::error::AppError::NotConfigured(
+                "NV oOS assistant credential is not stored (set it in Settings > NV oOS)".into(),
+            )
+        })?;
+        let client = NvoosClient::new(config.site_url.clone(), credential)?;
+        Ok(Self {
+            client,
+            cleanup_prompt: config.cleanup_prompt.clone(),
+            assistant_id: config.assistant_id.clone(),
+            polish_provider: config.polish_provider.clone(),
+            polish_model: config.polish_model.clone(),
+        })
+    }
+}
+
+#[async_trait]
+impl CleanupProvider for NvoosProvider {
+    fn id(&self) -> &'static str {
+        "nvoos"
+    }
+
+    async fn polish(&self, text: &str, category: AppCategory) -> AppResult<(String, PolishMeta)> {
+        self.client
+            .polish(
+                text,
+                category,
+                &self.cleanup_prompt,
+                self.assistant_id.as_deref(),
+                self.polish_provider.as_deref(),
+                self.polish_model.as_deref(),
+            )
+            .await
+    }
+
+    async fn summarize(&self, text: &str) -> AppResult<String> {
+        let (summary, _meta) = self
+            .client
+            .polish(
+                text,
+                AppCategory::Default,
+                crate::cleanup::providers::openai_shape::summarize_prompt(),
+                self.assistant_id.as_deref(),
+                self.polish_provider.as_deref(),
+                self.polish_model.as_deref(),
+            )
+            .await?;
+        Ok(summary)
+    }
+
+    /// Generic single-turn completion (the browser agent's brain seam, §5a).
+    /// `NvoosClient::polish` already maps `cleanup_prompt` → system and
+    /// `text` → user, so the agent's system prompt + observation map directly.
+    async fn complete(&self, system: &str, user: &str, _temperature: f64) -> AppResult<String> {
+        let (reply, _meta) = self
+            .client
+            .polish(
+                user,
+                AppCategory::Default,
+                system,
+                self.assistant_id.as_deref(),
+                self.polish_provider.as_deref(),
+                self.polish_model.as_deref(),
+            )
+            .await?;
+        Ok(reply)
+    }
+}
