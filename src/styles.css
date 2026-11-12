@@ -1,0 +1,611 @@
+/* NV oOS Cognition — dark, compact, NDS-adjacent tokens (local, no CDN). */
+
+:root {
+  --bg: #101018;
+  --panel: #181824;
+  --panel-2: #20202e;
+  --border: #2c2c3e;
+  --text: #e8e8f0;
+  --muted: #9a9ab0;
+  /* Brand accents follow the app icon (nvoos-icon.svg): cyan #25cbe7 +
+     purple #713cec. The purple is lightened to #9d7bff so accent-colored
+     text keeps AA contrast on the dark background (raw icon purple is 3.2:1). */
+  --accent: #25cbe7;
+  --accent-2: #9d7bff;
+  --ok: #3ecf8e;
+  --warn: #f5c542;
+  --danger: #ff5c5c;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.brand-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+}
+
+.version {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.tab {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tab:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+
+.tab.active {
+  color: var(--text);
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.sub-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  /* Establish a containing block for the Assistant tab's full-height iframe
+     so its `.assistant-frame-wrap { position: absolute; inset: 0 }` fills
+     only the content area below the top nav — not the whole viewport. */
+  position: relative;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.card h3 {
+  margin: 16px 0 8px;
+  font-size: 14px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12px;
+}
+
+.ok-text {
+  color: var(--ok);
+}
+
+.warn-text {
+  color: var(--warn);
+}
+
+.dictate-state {
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  margin: 8px 0;
+}
+
+.dictate-state[data-state='recording'] {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.dictate-state[data-state='processing'] {
+  border-color: var(--accent-2);
+  color: var(--accent-2);
+}
+
+.dictate-state[data-state='error'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.dictate-state .done {
+  color: var(--ok);
+}
+
+.preview {
+  white-space: pre-wrap;
+  background: var(--bg);
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.camera-preview {
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #000;
+}
+
+.camera-frame {
+  /* The canvas overlay is absolutely positioned inside this box. */
+}
+
+.vision-overlay {
+  cursor: crosshair;
+}
+
+.kv {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.kv li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.badge {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.badge.ok {
+  background: rgba(62, 207, 142, 0.15);
+  color: var(--ok);
+}
+
+.badge.warn {
+  background: rgba(245, 197, 66, 0.15);
+  color: var(--warn);
+}
+
+.badge.dim {
+  background: var(--bg);
+  color: var(--muted);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+/* Memory panel hit list (Proposal 127). */
+.hits {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+}
+
+.hits .hit {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.hits .hit p {
+  margin: 4px 0 0;
+  white-space: pre-wrap;
+}
+
+.btn {
+  background: var(--accent);
+  color: #14101c;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn.ghost {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.danger { color: var(--danger); }
+
+.btn.danger {
+  background: var(--danger);
+  color: #1c1010;
+}
+
+.btn-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* Diagnostics live input level meter. */
+.meter {
+  height: 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+
+.meter-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 120ms linear;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 8px 0;
+}
+
+.row input[type='text'],
+.row input[type='search'],
+.row input[type='number'],
+.row input[type='password'],
+.row select,
+.row textarea,
+.toolbar input {
+  flex: 1;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.row textarea {
+  font-family: inherit;
+  resize: vertical;
+}
+
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.models,
+.transcripts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.models li,
+.transcripts li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.transcripts li {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.clean {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.raw {
+  margin: 6px 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+  background: var(--bg);
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.link {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+  align-self: flex-start;
+}
+
+.link.danger:hover {
+  color: var(--danger);
+}
+
+.credential {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+
+/* ---- overlay capsule --------------------------------------------------- */
+
+.overlay-capsule {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 0 18px;
+  background: rgba(16, 16, 24, 0.9);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+.overlay-lamp {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex: none;
+}
+
+.overlay-capsule[data-state='recording'] .overlay-lamp {
+  background: var(--accent);
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.overlay-capsule[data-state='processing'] .overlay-lamp {
+  background: var(--accent-2);
+}
+
+.overlay-capsule[data-state='done'] .overlay-lamp {
+  background: var(--ok);
+}
+
+.overlay-capsule[data-state='error'] .overlay-lamp {
+  background: var(--danger);
+}
+
+.overlay-text {
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* macOS permission rows (Settings -> Permissions). */
+.permissions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.permission-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.permission-row:last-child {
+  border-bottom: none;
+}
+
+.permission-row .row {
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.assistant-frame-wrap {
+  /* Fill the `.content` element edge-to-edge (cancelling its 16px padding). */
+  position: absolute;
+  inset: -16px;
+  box-sizing: border-box;
+}
+
+.assistant-frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  background: #111;
+}
+
+/* NV oOS hub — multi-surface view (sub-tab bar above the framed SPA). */
+.nvoos-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  height: 100%;
+  margin: -8px -8px 0 -8px;
+}
+
+.nvoos-hub-tabs {
+  flex-shrink: 0;
+  padding: 0 8px;
+}
+
+/* The framed SPA fills the remaining space below the sub-tab bar. */
+.nvoos-hub .assistant-frame-wrap {
+  position: relative;
+  inset: auto;
+  flex: 1;
+  margin: 0;
+}
+
+/* ---- snippet OCR overlay (Proposal 100) -------------------------------- */
+
+.snippet-root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+}
+
+.snippet-root--empty {
+  background: transparent;
+}
+
+.snippet-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+.snippet-selection {
+  position: absolute;
+  border: 2px solid #4f8cff;
+  background: rgba(79, 140, 255, 0.12);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.38);
+}
+
+.snippet-hint {
+  position: absolute;
+  left: 50%;
+  top: -30px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: #20242c;
+  color: #dfe5ee;
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 4px;
+  opacity: 0.9;
+}
+
+.snippet-help {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  background: rgba(20, 24, 30, 0.85);
+  color: #dfe5ee;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 6px;
+}
+
+.snippet-result {
+  position: absolute;
+  left: 50%;
+  bottom: 48px;
+  transform: translateX(-50%);
+  max-width: 72vw;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #20242c;
+  color: #dfe5ee;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+}
+
+.snippet-result--error {
+  background: #3a2226;
+  color: #ffb4b8;
+}
+
+.snippet-result-title {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.snippet-result-text {
+  white-space: pre-wrap;
+  max-height: 30vh;
+  overflow: hidden;
+}
